@@ -1,6 +1,8 @@
-pub fn parse(html: &str) -> Node {
-  let mut stack: Vec<String> = Vec::new();
+use regex::Regex;
+use std::collections::HashMap;
+use std::ops::Index;
 
+pub fn parse<'a>(html: &str, stack: &'a mut Vec<String>) -> Node<'a> {
   let mut in_tag = false;
   let mut tag = String::new();
   for char in html.chars() {
@@ -23,12 +25,12 @@ pub fn parse(html: &str) -> Node {
     }
   }
 
-  println!("{:?}", stack);
-  gen_tree(&stack)
+  println!("{:#?}", stack);
+  gen_tree(stack)
 }
 
 fn gen_tree(stack: &Vec<String>) -> Node {
-  let mut root = Node::new(String::from(&stack[0]));
+  let mut root = Node::new(&stack[0]);
   let node = &mut root;
   let mut start_index = 1;
   let mut last_index = stack.len() - 2;
@@ -42,11 +44,11 @@ fn gen_tree(stack: &Vec<String>) -> Node {
     let mut close_tag = String::from("/");
     close_tag.push_str(&stack[start_index]);
     if close_tag == stack[last_index] || start_index == last_index {
-      node.children.push(Node::new(String::from(&stack[start_index])));
+      node.children.push(Node::new(&stack[start_index]));
       start_index += 1;
       last_index -= 1;
     } else {
-      node.children.push(Node::new(String::from(&stack[start_index])));
+      node.children.push(Node::new(&stack[start_index]));
       start_index += 1;
     }
   }
@@ -54,16 +56,59 @@ fn gen_tree(stack: &Vec<String>) -> Node {
   root
 }
 
-#[derive(Debug)]
-pub struct Node {
-  tag: String,
-  children: Vec<Node>,
+pub fn parse_props<'a>(str: &'a str) -> (String, HashMap<&'a str, &'a str>) {
+  let mut prop_map: HashMap<&str, &str> = HashMap::new();
+  let tag_re = Regex::new(r"([\w\d]+)\s*").unwrap();
+  let re = Regex::new(r#"\s*([^=]+)\s*(?:=\s*['"](\S+)['"])*"#).unwrap();
+  
+  let tag_captures = tag_re.captures(str).unwrap();
+  let props_start_index = tag_captures.index(0).len();
+  let tag = String::from(tag_captures.index(1));
+
+  let str = &str[props_start_index..];
+  for captures in re.captures_iter(str) {
+    let mut iter = captures.iter();
+    iter.next();
+    loop {
+      let cap = match iter.next() {
+        Some(v) => v,
+        None => break
+      };
+      let key = if let Some(k) = cap {
+        k.as_str()
+      } else {
+        break;
+      };
+
+      let cap = match iter.next() {
+        Some(v) => v,
+        None => break
+      };
+      let prop = if let Some(p) = cap {
+        p.as_str()
+      } else {
+        ""
+      };
+      prop_map.insert(key, prop);
+    }
+  }
+
+  (tag, prop_map)
 }
 
-impl Node {
-  fn new(tag: String) -> Node {
+#[derive(Debug)]
+pub struct Node<'a> {
+  tag: String,
+  props: HashMap<&'a str, &'a str>,
+  children: Vec<Node<'a>>,
+}
+
+impl<'a> Node<'a> {
+  fn new(tag_str: &str) -> Node {
+    let (tag, props) = parse_props(tag_str);
     Node {
       tag,
+      props,
       children: Vec::new()
     }
   }

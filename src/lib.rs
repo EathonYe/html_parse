@@ -113,3 +113,21 @@ impl<'a> Node<'a> {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::parse_props;
+  use std::collections::HashMap;
+
+  #[test]
+  fn test_parse_props() {
+    let expect_tag = "img";
+    let mut expect_props = HashMap::new();
+    expect_props.insert("src", "xxx");
+    expect_props.insert("alt", "yyy");
+
+    let (tag, prop_map) = parse_props("img src=\"xxx\" alt=\"yyy\"");
+    assert_eq!(tag, expect_tag);
+    assert_eq!(prop_map, expect_props);
+  }
+}

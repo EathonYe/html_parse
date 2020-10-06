@@ -2,34 +2,36 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::ops::Index;
 
-pub fn parse<'a>(html: &str, stack: &'a mut Vec<String>) -> Node<'a> {
+pub fn parse<'a>(html: &'a str) -> Node<'a> {
+  let mut stack: Vec<&str> = Vec::new();
   let mut in_tag = false;
-  let mut tag = String::new();
-  for char in html.chars() {
+  let mut start_index = 0;
+  let mut last_index = 0;
+  
+  for (pos, char) in html.char_indices() {
     if in_tag {
       if char != '>' {
-        tag.push(char);
+        last_index += 1;
       } else {
-        if &tag[tag.len() -1..tag.len()] == "/" {
-          stack.push(String::from(String::from(&tag[0..tag.len()-1]).trim()));
+        if &html[pos-1..pos] == "/" {
+          stack.push(&html[start_index+1..last_index]);
         } else {
-          stack.push(tag.clone());
+          stack.push(&html[start_index+1..last_index+1]);
         }
         in_tag = false;
-        tag.clear();
       }
-    } else {
-      if char == '<' {
-        in_tag = true;
-      }
+    } else if char == '<' {
+      in_tag = true;
+      start_index = pos;
+      last_index = pos;
     }
   }
 
   println!("{:#?}", stack);
-  gen_tree(stack)
+  gen_tree(&stack)
 }
 
-fn gen_tree(stack: &Vec<String>) -> Node {
+fn gen_tree<'a>(stack: &Vec<&'a str>) -> Node<'a> {
   let mut root = Node::new(&stack[0]);
   let node = &mut root;
   let mut start_index = 1;
@@ -59,7 +61,7 @@ fn gen_tree(stack: &Vec<String>) -> Node {
 pub fn parse_props<'a>(str: &'a str) -> (String, HashMap<&'a str, &'a str>) {
   let mut prop_map: HashMap<&str, &str> = HashMap::new();
   let tag_re = Regex::new(r"([\w\d]+)\s*").unwrap();
-  let re = Regex::new(r#"\s*([^=]+)\s*(?:=\s*['"](\S+)['"])*"#).unwrap();
+  let re = Regex::new(r#"\s*([^=\s]+)\s*(?:=\s*['"](\S+)['"])*"#).unwrap();
   
   let tag_captures = tag_re.captures(str).unwrap();
   let props_start_index = tag_captures.index(0).len();

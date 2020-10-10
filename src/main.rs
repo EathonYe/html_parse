@@ -8,7 +8,10 @@ fn main() {
         <img src=\"xxx\" alt=\"yyy\" />
         <input type=\"text\" />
         <!-- <div>comment</div> -->
-        <p>This is a p tag.</p>
+        <p>
+            This is a p tag.
+            <span>lalala</span>
+        </p>
     </div>",
     );
 

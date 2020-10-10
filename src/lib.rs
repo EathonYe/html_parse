@@ -34,7 +34,7 @@ pub fn parse<'a>(html: &'a str) -> Node<'a> {
                         let i = String::from(&html[start_index..last_index + 1])
                             .find(text)
                             .unwrap();
-                        stack.push(&html[start_index + i..start_index + text.len()]);
+                        stack.push(&html[start_index + i..start_index + i + text.len()]);
                     }
                 }
                 in_tag = true;
@@ -52,7 +52,7 @@ pub fn parse<'a>(html: &'a str) -> Node<'a> {
 
 fn gen_tree<'a>(stack: &Vec<&'a str>) -> Node<'a> {
     let mut root = Node::new(&stack[0]);
-    let node = &mut root;
+    let mut node = &mut root;
     let mut start_index = 1;
     let mut last_index = stack.len() - 2;
 
@@ -75,6 +75,8 @@ fn gen_tree<'a>(stack: &Vec<&'a str>) -> Node<'a> {
             node.children.push(Node::new(&stack[start_index]));
             start_index += 1;
             last_index -= 1;
+            let index = node.children.len() - 1;
+            node = node.children.get_mut(index).unwrap();
         } else {
             node.children.push(Node::new(&stack[start_index]));
             start_index += 1;

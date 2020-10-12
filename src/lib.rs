@@ -10,40 +10,45 @@ pub fn parse<'a>(html: &'a str) -> Node<'a> {
     let mut last_index = 0;
 
     for (pos, char) in html.char_indices() {
+        // handle with tag (Element and Comment)
         if in_tag {
             if char != '>' || (in_comment && &html[pos - 2..pos + 1] != "-->") {
                 last_index += 1;
                 if !in_comment && &html[start_index..pos + 1] == "<!--" {
                     in_comment = true;
                 }
-            } else {
-                if in_comment {
-                    in_comment = false;
-                }
-                stack.push(&html[start_index..pos + 1]);
-                in_tag = false;
-                start_index = pos + 1;
-                last_index = pos + 1;
+                continue;
             }
-        } else {
-            if !in_comment && char == '<' {
-                if start_index != last_index {
-                    let re = regex::Regex::new(r"^\s*(\S?[\w\s]*\S)\s*$").unwrap();
-                    if let Some(captures) = re.captures(&html[start_index..pos]) {
-                        let text = &captures[1];
-                        let i = String::from(&html[start_index..last_index + 1])
-                            .find(text)
-                            .unwrap();
-                        stack.push(&html[start_index + i..start_index + i + text.len()]);
-                    }
-                }
-                in_tag = true;
-                start_index = pos;
-                last_index = pos;
-            } else {
-                last_index += 1;
-            }
+
+            // restart
+            in_comment = false;
+            stack.push(&html[start_index..pos + 1]);
+            in_tag = false;
+            start_index = pos + 1;
+            last_index = pos + 1;
+            continue;
         }
+
+        // handle with text and the beginning of a tag
+        if !in_comment && char == '<' {
+            if start_index != last_index {
+                let re = regex::Regex::new(r"^\s*(\S?[\w\s]*\S)\s*$").unwrap();
+                if let Some(captures) = re.captures(&html[start_index..pos]) {
+                    let text = &captures[1];
+                    let i = String::from(&html[start_index..last_index + 1])
+                        .find(text)
+                        .unwrap();
+                    stack.push(&html[start_index + i..start_index + i + text.len()]);
+                }
+            }
+            in_tag = true;
+            start_index = pos;
+            last_index = pos;
+            continue;
+        }
+
+        // collect char
+        last_index += 1;
     }
 
     println!("{:#?}", stack);

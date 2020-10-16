@@ -134,6 +134,7 @@ pub fn parse_props<'a>(str: &'a str) -> (String, Type, HashMap<&'a str, &'a str>
     (tag, Type::Element, prop_map, None)
 }
 
+#[derive(PartialEq)]
 #[derive(Debug)]
 pub enum Type {
     Element,
@@ -145,23 +146,19 @@ pub enum Type {
 pub struct Node<'a> {
     tag: String,
     node_type: Type,
-    text: Option<&'a str>,
+    content: Option<&'a str>,
     props: HashMap<&'a str, &'a str>,
     children: Vec<Node<'a>>,
 }
 
 impl<'a> Node<'a> {
     fn new(tag_str: &str) -> Node {
-        let (tag, node_type, props, text) = parse_props(tag_str);
-        // let mut node_type = Type::Element;
-        // if &tag == "" {
-        //   node_type = Type::Text;
-        // }
+        let (tag, node_type, props, content) = parse_props(tag_str);
 
         Node {
             tag,
             node_type,
-            text,
+            content,
             props,
             children: Vec::new(),
         }
@@ -171,6 +168,7 @@ impl<'a> Node<'a> {
 #[cfg(test)]
 mod tests {
     use super::parse_props;
+    use super::Type;
     use std::collections::HashMap;
 
     #[test]
@@ -180,9 +178,9 @@ mod tests {
         expect_props.insert("src", "xxx");
         expect_props.insert("alt", "yyy");
 
-        let (tag, _node_type, prop_map, text) = parse_props("<img src=\"xxx\" alt=\"yyy\" />");
+        let (tag, node_type, prop_map, text) = parse_props("<img src=\"xxx\" alt=\"yyy\" />");
         assert_eq!(tag, expect_tag);
-        // assert_eq!(node_type, Type::Element);
+        assert_eq!(node_type, Type::Element);
         assert_eq!(prop_map, expect_props);
         assert_eq!(text, None);
     }
